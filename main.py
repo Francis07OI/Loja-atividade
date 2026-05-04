@@ -100,4 +100,100 @@ def excluir_categoria(
     db.delete(categoria)
     db.commit()
     return RedirectResponse("/categorias", status_code=303)
+
+# PRODUTOS
+
+ 
+@app.get("/produtos", response_class=HTMLResponse)
+def listar_produtos(request: Request, db: Session = Depends(get_db)):
+    """Lista todos os produtos."""
+    produtos = db.query(Produto).all()
+    return templates.TemplateResponse("produtos/listar.html", {
+        "request": request,
+        "produtos": produtos,
+    })
+ 
+ 
+@app.get("/produtos/novo", response_class=HTMLResponse)
+def form_novo_produto(request: Request, db: Session = Depends(get_db)):
+    """Exibe o formulário para criar um novo produto."""
+    categorias = db.query(Categoria).all()
+    return templates.TemplateResponse("produtos/form.html", {
+        "request": request,
+        "produto": None,
+        "categorias": categorias,
+    })
+ 
+ 
+@app.post("/produtos/novo")
+def criar_produto(
+    nome: str = Form(...),
+    preco: float = Form(...),
+    estoque: int = Form(...),
+    categoria_id: int = Form(...),
+    db: Session = Depends(get_db),
+):
+    """Cria um novo produto."""
+    produto = Produto(
+        nome=nome,
+        preco=preco,
+        estoque=estoque,
+        categoria_id=categoria_id,
+    )
+    db.add(produto)
+    db.commit()
+    return RedirectResponse("/produtos", status_code=303)
+ 
+ 
+@app.get("/produtos/{produto_id}/editar", response_class=HTMLResponse)
+def form_editar_produto(
+    produto_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Exibe o formulário de edição de um produto."""
+    produto = db.query(Produto).filter(Produto.id == produto_id).first()
+    if not produto:
+        raise HTTPException(status_code=404, detail="Produto não encontrado")
+    categorias = db.query(Categoria).all()
+    return templates.TemplateResponse("produtos/form.html", {
+        "request": request,
+        "produto": produto,
+        "categorias": categorias,
+    })
+ 
+ 
+@app.post("/produtos/{produto_id}/editar")
+def editar_produto(
+    produto_id: int,
+    nome: str = Form(...),
+    preco: float = Form(...),
+    estoque: int = Form(...),
+    categoria_id: int = Form(...),
+    db: Session = Depends(get_db),
+):
+    """Atualiza um produto existente."""
+    produto = db.query(Produto).filter(Produto.id == produto_id).first()
+    if not produto:
+        raise HTTPException(status_code=404, detail="Produto não encontrado")
+    produto.nome = nome
+    produto.preco = preco
+    produto.estoque = estoque
+    produto.categoria_id = categoria_id
+    db.commit()
+    return RedirectResponse("/produtos", status_code=303)
+ 
+ 
+@app.post("/produtos/{produto_id}/excluir")
+def excluir_produto(
+    produto_id: int,
+    db: Session = Depends(get_db),
+):
+    """Remove um produto."""
+    produto = db.query(Produto).filter(Produto.id == produto_id).first()
+    if not produto:
+        raise HTTPException(status_code=404, detail="Produto não encontrado")
+    db.delete(produto)
+    db.commit()
+    return RedirectResponse("/produtos", status_code=303)
  
